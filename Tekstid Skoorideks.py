@@ -47,7 +47,7 @@ def korduvate_sõnade_arv(oletamisega):
 
 #Kokkukleepunud kirjavahemärkide leidmine
 def leia_kokkukleepunud_kirjavahemärgid(oletamisega):
-    rx = re.compile(r'(\D)\1{2,}')
+    rx = re.compile(r'\D\s?[,.!?][^\d\s]')
     rxx = rx.findall(oletamisega.text)
     return len(rxx)
 
@@ -325,9 +325,9 @@ def vale_tähesuurus_osakaal(oletamisega):
         kõik_arv += 1
         # Vaatab lause esimest sõna eraldi
         # Kas esimene sõna on täis väiketähed või täis suurtähed
-        if sentence.words[0]['text'] == sentence.words[0]['text'].lower():
+        if sentence.words[0]['text'].islower():
             vale_väike += 1
-        elif sentence.words[0]['text'] == sentence.words[0]['text'].upper():
+        elif sentence.words[0]['text'].isupper():
             # Vaatab, et ei oleks ühe tähe suurune
             if len(sentence.words[0]['text']) > 1:
                 ainult_suur += 1
@@ -338,7 +338,7 @@ def vale_tähesuurus_osakaal(oletamisega):
                 continue
             kõik_arv += 1
             # Vaatab iga sõna, kas on vaid suurtähed
-            if word["text"] == word["text"].upper():
+            if word["text"].isupper():
                 # Vaatab, et ei oleks lühendi analüüsiga
                 lyhend = False
                 for analysis in word['analysis']:
@@ -371,88 +371,6 @@ def kirjavigadega_osaarv(oletamisega):
     if len(oletamisega.analysis) == 0:
         return -1, -1
     return kirjavigadega / len(oletamisega.analysis)
-
-def faili_info_salvestamine(filename):
-    global keskmised
-    
-    # Loob failinimed
-    ga_name = os.path.join("etnc19_web_2019_morf_oletamisega/", ".".join(filename.split(".")[:-1]) + "_morf_oletamisega.json")
-    ta_name = os.path.join("etnc19_web_2019_morf_oletamiseta/", ".".join(filename.split(".")[:-1]) + "_morf_oletamiseta.json")
-    meta_name = os.path.join("etnc19_web_2019_meta/", ".".join(filename.split(".")[:-1]) + "_meta.json")
-    
-    andmed_name = os.path.join("etnc19_web_2019_andmed/", ".".join(filename.split(".")[:-1]) + "_meta.json")
-    
-    # Loeb failidest sisse tekstid ja metainfo
-    oletamisega = None
-    oletamiseta = None
-    meta_info = None
-    with open(ga_name, "r", encoding = "utf-8") as fr:
-        oletamisega = Text(json.load(fr))
-    with open(ta_name, "r", encoding = "utf-8") as fr:
-        oletamiseta = Text(json.load(fr))
-    with open(meta_name, "r", encoding = "utf-8") as fr:
-        meta_info = json.load(fr)
-    
-    # Väljastatavate andmete sõnastik
-    andmed = defaultdict(float)
-    
-    # Metainfost oluliste andmete meelde jätmine
-    andmed["emotikonide_arv"] = meta_info["emotikonide_arv"]
-    andmed["TTR"] = meta_info["TTR"]
-    andmed["käändsõnade_osaarv"] = meta_info["käänduvate_lemmade_osaarv"]
-    andmed["lemmapikkuse_osaarv"] = meta_info["keskmine_lemma_pikkus"]
-    
-    # Arvutab tajuverbide osaarvu kõikidest verbidest ja jätab meelde
-    andmed['tajuverbide_osaarv'] = tajuverbide_keskmine(oletamisega)
-    
-    # Arvutab lühikeste tundmatu morfanalüüsi saanud sõnade osaarvu
-    andmed['luhemate_tundmatute_osakaal'] = luhemate_tundmatute_osakaal(oletamiseta)
-    
-    # Loendab kokku vähemalt kolm korda korduvad tähed sõna sees
-    andmed['korduvate_tähtede_arv'] = leia_korduvad_tähed(oletamisega)
-    
-    # Loendab kokku sõnadesse kokku kleepunud kirjavahemärkide arvu
-    andmed['kokkukleepunud_kirjavahemärkide_arv'] = leia_kokkukleepunud_kirjavahemärgid(oletamisega)
-    
-    # Leiab verbide isikute protsendid (kui palju on 1., 2. ja 3. isik)
-    verbide_isikute_protsendid = verbide_isikute_osakaalud(oletamisega)
-    andmed['verbide_esimese_isiku_osaarv'] = verbide_isikute_protsendid[0]
-    andmed['verbide_teise_isiku_osaarv'] = verbide_isikute_protsendid[1]
-    andmed['verbide_kolmanda_isiku_osaarv'] = verbide_isikute_protsendid[2]
-    
-    # Leiab asesõnade isikute protsendid (kui palju on 1., 2. ja 3. isik)
-    asesonade_isikute_protsendid = asesonade_isikute_osakaalud(oletamisega)
-    andmed['asesõnade_esimese_isiku_osaarv'] = asesonade_isikute_protsendid[0]
-    andmed['asesõnade_teise_isiku_osaarv'] = asesonade_isikute_protsendid[1]
-    andmed['asesõnade_kolmanda_isiku_osaarv'] = asesonade_isikute_protsendid[2]
-    
-    # Leiab passiivi osakaalu ja jätab meelde
-    andmed['passiivi_osakaal'] = passiivi_osakaal(oletamisega)
-    
-    # Leiab nud-partitsiibi osakaalu ja jätab meelde
-    andmed['nud-partitsiibiga_verbide_osakaal'] = nud_osakaal(oletamisega)
-    
-    # Leiab kaudse kõneviisi osakaalu ja jätab meelde
-    andmed['kaudse_kõneviisi_osakaal'] = vat_osakaal(oletamisega)
-    
-    # Leiab, kui palju tekstist on väikese algustähega või läbinisti suur
-    valed_suurused = vale_tähesuurus_osakaal(oletamisega)
-    andmed['puuduva_suure_algustähega'] = valed_suurused[0]
-    andmed['läbinisti_suur'] = valed_suurused[1]
-    
-    # Leiab korduvate sõnade arvu
-    andmed['korduvate_sõnade_arv'] = korduvate_sõnade_arv(oletamisega)
-    
-    # Leiab korduvate kokkukleepunud "juppide" arvu
-    # nt silbid aga ka muud arbitraarsed kordused üle 2 tähe ja 3 korduse
-    andmed['korduvate_juppide_arv'] = leia_korduvad_jupid(oletamisega)
-    
-    # Leiab kirjavigadega sõnade (mitte nimede) osaarvu
-    andmed['kirjavigadega_osaarv'] = kirjavigadega_osaarv(oletamisega)
-    
-    # Kirjutab metainfo tagasi faili edasiseks skoori arvutamiseks
-    with open(andmed_name, 'w', encoding="UTF-8") as fw:
-        json.dump(andmed, fw, sort_keys=True, indent=4)
 
 def formaalsus(andmed):
     skoor = 0
@@ -522,27 +440,6 @@ def formaalsus(andmed):
     else:
         skoor_isik -= 5
     
-    tunnus_a3i = andmed["asesõnade_kolmanda_isiku_osaarv"]
-    # Kui tunnust tekstis ei leidunud, ei mõjuta see skoori
-    if tunnus_a3i == -1:
-        skoor_isik += 0
-    # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
-    # <= 33.3%
-    elif tunnus_a3i == 0.000000:
-        skoor_isik += 0
-    # <= 50%
-    elif tunnus_a3i <= 0.200000:
-        skoor_isik += 2
-    # <= 66.7%
-    elif tunnus_a3i <= 0.416667:
-        skoor_isik += 3
-    # <= 83.3%
-    elif tunnus_a3i <= 0.800000:
-        skoor_isik += 4
-    # <= 100% (ka suuremad, kui korpuses leiduvad)
-    else:
-        skoor_isik += 5
-    
     tunnus_a2i = andmed["asesõnade_teise_isiku_osaarv"]
     # Kui tunnust tekstis ei leidunud, ei mõjuta see skoori
     if tunnus_a2i == -1:
@@ -550,7 +447,7 @@ def formaalsus(andmed):
     # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
     # <= 50%
     elif tunnus_a2i == 0.000000:
-        skoor_isik -= 1
+        skoor_isik -= 0
     # <= 66.7%
     elif tunnus_a2i <= 0.200000:
         skoor_isik -= 3
@@ -568,7 +465,7 @@ def formaalsus(andmed):
     # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
     # <= 33.3%
     elif tunnus_v1i == 0.000000:
-        skoor_isik -= 1
+        skoor_isik -= 0
     # <= 50%
     elif tunnus_v1i <= 0.105263:
         skoor_isik -= 2
@@ -606,6 +503,31 @@ def formaalsus(andmed):
     else:
         skoor_isik -= 5
     
+    # Vähendan isikute mõju skoorile, kuna need on omavahel seotud
+    skoor += (skoor_isik / 4)
+    skoor_isik = 0
+    
+    tunnus_a3i = andmed["asesõnade_kolmanda_isiku_osaarv"]
+    # Kui tunnust tekstis ei leidunud, ei mõjuta see skoori
+    if tunnus_a3i == -1:
+        skoor_isik += 0
+    # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
+    # <= 33.3%
+    elif tunnus_a3i == 0.000000:
+        skoor_isik += 0
+    # <= 50%
+    elif tunnus_a3i <= 0.200000:
+        skoor_isik += 2
+    # <= 66.7%
+    elif tunnus_a3i <= 0.416667:
+        skoor_isik += 3
+    # <= 83.3%
+    elif tunnus_a3i <= 0.800000:
+        skoor_isik += 4
+    # <= 100% (ka suuremad, kui korpuses leiduvad)
+    else:
+        skoor_isik += 5
+    
     tunnus_v3i = andmed["verbide_kolmanda_isiku_osaarv"]
     # Kui tunnust tekstis ei leidunud, ei mõjuta see skoori
     if tunnus_v3i == -1:
@@ -631,7 +553,7 @@ def formaalsus(andmed):
         skoor_isik += 5
     
     # Vähendan isikute mõju skoorile, kuna need on omavahel seotud
-    skoor += (skoor_isik / 6)
+    skoor += (skoor_isik / 2)
     
     tunnus_emotikonide_arv = andmed["emotikonide_arv"]
     # Binaarse tunnuse (on või ei ole) skoor on vastavalt kas 5 või 0
@@ -771,9 +693,9 @@ def formaalsus(andmed):
     
     #Paneb skoori vahemikku -1 ja 1
     if skoor < 0:
-        return skoor / (5+5+5+5+5 + (20/6))
+        return skoor / (5+5+5+5+5 + (20/4))
     else:
-        return skoor / (5+5+5+5+5 + (10/6))
+        return skoor / (5+5+5+5+5 + (10/2))
 
 def spontaansus(andmed):
     skoor = 0
@@ -941,17 +863,12 @@ def spontaansus(andmed):
     
     tunnus_kokkukleepunud_kirjavahemärkide_arv = andmed["kokkukleepunud_kirjavahemärkide_arv"]
     # Binaarse tunnuse (on või ei ole) skoor on vastavalt kas 5 või 0
-    if tunnus_luhemate_tundmatute_osakaal > 0.0000:
+    if tunnus_kokkukleepunud_kirjavahemärkide_arv > 0.0000:
         skoor += 5
     
     tunnus_korduvate_juppide_arv = andmed["korduvate_juppide_arv"]
     # Binaarse tunnuse (on või ei ole) skoor on vastavalt kas 5 või 0
     if tunnus_korduvate_juppide_arv > 0.0000:
-        skoor += 5
-    
-    tunnus_korduvate_sõnade_arv = andmed["korduvate_sõnade_arv"]
-    # Binaarse tunnuse (on või ei ole) skoor on vastavalt kas 5 või 0
-    if tunnus_korduvate_sõnade_arv > 0.0000:
         skoor += 5
     
     tunnus_läbinisti_suur = andmed["läbinisti_suur"]
@@ -961,19 +878,13 @@ def spontaansus(andmed):
     # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
     # Ei käsitle kirjavigasid binaarsetena, kuna neid võib olla vale-positiivseid (nt pärisnimesid)
     # <= 16.7%
-    elif tunnus_läbinisti_suur <= 0.003876:
+    elif tunnus_läbinisti_suur == 0.000000:
         skoor += 0
-    # <= 33.3%
-    elif tunnus_läbinisti_suur <= 0.010945:
-        skoor += 1
-    # <= 50%
-    elif tunnus_läbinisti_suur <= 0.018692:
-        skoor += 2
     # <= 66.7%
-    elif tunnus_läbinisti_suur <= 0.030612:
+    elif tunnus_läbinisti_suur <= 0.002037:
         skoor += 3
     # <= 83.3%
-    elif tunnus_läbinisti_suur <= 0.053410:
+    elif tunnus_läbinisti_suur <= 0.009217:
         skoor += 4
     # <= 100% (ka suuremad, kui korpuses leiduvad)
     else:
@@ -983,12 +894,36 @@ def spontaansus(andmed):
     # Binaarse tunnuse (on või ei ole) skoor on vastavalt kas 5 või 0
     if tunnus_puuduva_suure_algustähega > 0.0000:
         skoor += 5
+        
+    tunnus_a1i = andmed["asesõnade_esimese_isiku_osaarv"]
+    # Kui tunnust tekstis ei leidunud, ei mõjuta see skoori
+    if tunnus_a1i == -1:
+        skoor += 0
+    # Jagasin mitte-polaarse tunnuse korpuse alusel 6-ks võrdseks osaks, et hinnata
+    # <= 16.7%
+    elif tunnus_a1i <= 0.000000:
+        skoor += 0
+    # <= 33.3%
+    elif tunnus_a1i <= 0.242424:
+        skoor += 1
+    # <= 50%
+    elif tunnus_a1i <= 0.500000:
+        skoor += 2
+    # <= 66.7%
+    elif tunnus_a1i <= 0.666667:
+        skoor += 3
+    # <= 83.3%
+    elif tunnus_a1i <= 0.894737:
+        skoor += 4
+    # <= 100% (ka suuremad, kui korpuses leiduvad)
+    else:
+        skoor += 5
     
     #Paneb skoori vahemikku -1 ja 1, kuid 0 jääb 0-ks
     if skoor < 0:
         return skoor / (5 + 5)
     else:
-        return skoor / (5 + 5 + (10/2) + 5 + 5 + 5 + 5 + 5 + 5 + 5 + 5)
+        return skoor / (5 + 5 + (10/2) + 5 + 5 + 5 + 5 + 5 + 5 + 5)
 
 
 # Jooksutamisele
@@ -1006,10 +941,13 @@ if __name__ == '__main__':
     hinda = args.hinda
     kaust = args.kaust
     
+    failinimed = []
+    
     # Kui tegu on kaustaga
     if os.path.isdir(hinda):
-        os.makedirs(os.path.join(kaust, hinda), exist_ok=True)
-        failinimed = [os.path.join(hinda, f) for f in os.listdir(hinda)]
+        for path, dirs, files in os.walk(hinda):
+            os.makedirs(os.path.join(kaust, path), exist_ok=True)
+            failinimed = [os.path.join(path, filename) for filename in files if not os.path.isdir(filename)]
     # Kui tegu on failiga
     else:
         os.makedirs(os.path.dirname(kaust), exist_ok=True)
@@ -1040,8 +978,13 @@ if __name__ == '__main__':
         # Avab faili
         with open(filename, "r", encoding="UTF-8") as f:
             
-            # Loeb failist vaid sisu, ignoreerib alguses olevat metainfot
-            pure = "".join(f.readlines()[1:])
+            # Loeb failist vaid sisu, ignoreerib XML-i metainfot
+            pure = ""
+            for line in f.readlines():
+                if line[0] == "<" and line[-1] == ">":
+                    continue
+                else:
+                    pure = pure + "\n" + line
 
             # Regexiga leiab kõik potentsiaalsed emojid tekstist (kahe kooloni vaheline whitespaceita tekst)
             emojid = re.findall(":\S+?:", pure)
