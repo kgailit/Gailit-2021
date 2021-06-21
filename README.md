@@ -7,6 +7,10 @@ Skriptil on kohustuslik parameeter `--hinda`, millele tuleb anda kas ühe faili 
 
 Skriptil on teine parameeter `--kaust`, mis on väljundkausta nimi. Kui väljundkausta ei määrata, väljastatakse tekstide skoorid kausta *Skoorid*. Failide skoorid väljastatakse samade faililaiendite ning failistruktuuriga, nagu on sisendtekstidel.
 
+GitHubi kaust *Loendid* sisaldab programmi jooksutamiseks vajalikke emotikonide ja tajuverbide loendeid. Kaust *Loendid* peab olema skripti kasutamisel skriptiga samas kaustas.
+
+GitHubi kaust *Notebooks* sisaldab programmi koostamisel loodud Jupyter Notebook faile, mida kasutasin süsteemi koostamisel ja mis ei ole vajalikud skripti jooksutamiseks.
+
 Autor: Karl Gustav Gailit
 
 Korpus: Eesti keele ühendkorpus 2019, 2019. aasta veebitekstide alamkorpus.
