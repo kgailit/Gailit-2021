@@ -11,6 +11,11 @@ GitHubi kaust *Loendid* sisaldab programmi jooksutamiseks vajalikke emotikonide 
 
 GitHubi kaust *Notebooks* sisaldab programmi koostamisel loodud Jupyter Notebook faile, mida kasutasin süsteemi koostamisel ja mis ei ole vajalikud skripti jooksutamiseks.
 
+Eelnõuded:
+`
+EstNLTK 1.4.1
+`
+
 Autor: Karl Gustav Gailit
 
 Korpus: Eesti keele ühendkorpus 2019, 2019. aasta veebitekstide alamkorpus.
